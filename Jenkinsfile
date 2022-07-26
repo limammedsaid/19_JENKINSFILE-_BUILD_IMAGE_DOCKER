@@ -1,19 +1,25 @@
-node{
-  def app
+ def registryProjet='limam1984/jenkins_image'
+ def registryCredential = 'reg1'
+ def IMAGE="${registryProjet}:version-${env.BUILD_ID}"
+node {    
+      def app     
+      stage('Clone repository') {               
+             
+            git branch: 'main', url:  'https://github.com/limammedsaid/20_JENKINSFILE_PUSH_VERS_REGISTRY_DOCKER.git' 
+      }
+      def img = stage('Build') {
+          docker.build("$IMAGE",  '.')
+       }
 
-    stage('Clone') {
-        checkout scm
-    }
-
-    stage('Build image') {
-        app = docker.build("xavki/nginx")
-    }
-
-    stage('Test image') {
-        docker.image('xavki/nginx').withRun('-p 80:80') { c ->
-        sh 'docker ps'
-        sh 'curl localhost'
-	     }
-    }
-}
-
+      stage('Run') {
+          img.withRun("--name run-$BUILD_ID -p 80:80") { c ->
+            sh 'curl localhost'
+          }
+       }
+       stage('Push image') {
+          docker.withRegistry('https://registry.hub.docker.com', 'reg1') {    
+          img.push ("${env.BUILD_NUMBER}")            
+          img.push()     
+              }    
+           }
+        }
